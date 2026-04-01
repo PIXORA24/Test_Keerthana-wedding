@@ -44,7 +44,6 @@
   var mainContent = document.getElementById("mainContent");
   var weddingSection = document.getElementById("weddingSection");
   var weddingVideo = document.getElementById("weddingVideo");
-  var backgroundMusic = document.getElementById("bgMusic");
   var soundToggle = document.getElementById("soundToggle");
   var soundToggleLabel = soundToggle.querySelector(".sound-btn__label");
   var scrollHint = document.getElementById("scrollHint");
@@ -55,8 +54,6 @@
     heroInView: true,
     navigatingAway: false
   };
-
-  var volumeTweens = new WeakMap();
 
   function formatUtcDate(date) {
     return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -80,106 +77,35 @@
     }
   }
 
-  function stopTween(media) {
-    var activeTween = volumeTweens.get(media);
-    if (activeTween) {
-      cancelAnimationFrame(activeTween);
-      volumeTweens.delete(media);
-    }
-  }
-
-  function animateVolume(media, target, duration, onComplete) {
-    if (!media) {
-      if (typeof onComplete === "function") {
-        onComplete();
-      }
-      return;
-    }
-
-    stopTween(media);
-
-    var startVolume = Number.isFinite(media.volume) ? media.volume : 1;
-    var startTime = performance.now();
-    var total = Math.max(duration || 0, 1);
-
-    function tick(now) {
-      var progress = Math.min((now - startTime) / total, 1);
-      media.volume = startVolume + (target - startVolume) * progress;
-
-      if (progress < 1) {
-        volumeTweens.set(media, requestAnimationFrame(tick));
-      } else {
-        volumeTweens.delete(media);
-        if (typeof onComplete === "function") {
-          onComplete();
-        }
-      }
-    }
-
-    volumeTweens.set(media, requestAnimationFrame(tick));
-  }
-
   function setSoundButton() {
     soundToggle.classList.toggle("is-muted", !state.soundOn);
     soundToggleLabel.textContent = state.soundOn ? "Sound on" : "Sound off";
     soundToggle.setAttribute("aria-label", state.soundOn ? "Turn sound off" : "Turn sound on");
   }
 
-  function pauseAllMedia() {
-    stopTween(weddingVideo);
-    stopTween(backgroundMusic);
-    pauseMedia(weddingVideo);
-    pauseMedia(backgroundMusic);
-  }
-
-  function syncMediaToState() {
+  function syncVideoPlayback() {
     if (!state.envelopeOpened || state.navigatingAway || document.hidden) {
       return;
     }
 
-    if (state.heroInView) {
-      if (state.soundOn) {
-        animateVolume(backgroundMusic, 0, 220, function () {
-          pauseMedia(backgroundMusic);
-        });
-
-        weddingVideo.volume = 0;
-        weddingVideo.muted = false;
-        playMedia(weddingVideo).catch(function () {
-          state.soundOn = false;
-          setSoundButton();
-          weddingVideo.muted = true;
-          weddingVideo.volume = 0;
-          playMedia(weddingVideo).catch(function () {});
-        });
-        animateVolume(weddingVideo, 1, 340);
-      } else {
-        pauseMedia(backgroundMusic);
-        weddingVideo.volume = 0;
-        weddingVideo.muted = true;
-        playMedia(weddingVideo).catch(function () {});
-      }
+    if (!state.heroInView) {
+      pauseMedia(weddingVideo);
       return;
     }
 
-    if (state.soundOn) {
-      weddingVideo.muted = true;
-      animateVolume(weddingVideo, 0, 220, function () {
-        pauseMedia(weddingVideo);
-      });
+    weddingVideo.muted = !state.soundOn;
 
-      backgroundMusic.volume = 0;
-      playMedia(backgroundMusic).catch(function () {});
-      animateVolume(backgroundMusic, 1, 360);
-    } else {
-      pauseMedia(weddingVideo);
-      pauseMedia(backgroundMusic);
-    }
+    playMedia(weddingVideo).catch(function () {
+      state.soundOn = false;
+      setSoundButton();
+      weddingVideo.muted = true;
+      playMedia(weddingVideo).catch(function () {});
+    });
   }
 
   function openInvitation() {
-    var burstDelay = PREFERS_REDUCED_MOTION ? 140 : 620;
-    var revealDelay = PREFERS_REDUCED_MOTION ? 260 : 1450;
+    var burstDelay = PREFERS_REDUCED_MOTION ? 120 : 600;
+    var revealDelay = PREFERS_REDUCED_MOTION ? 240 : 1380;
 
     if (state.envelopeOpened) {
       return;
@@ -198,30 +124,7 @@
       mainContent.classList.add("visible");
       soundToggle.classList.add("visible");
       setSoundButton();
-
-      weddingVideo.volume = 0;
-      weddingVideo.muted = false;
-
-      playMedia(weddingVideo).then(function () {
-        animateVolume(weddingVideo, state.soundOn ? 1 : 0, 420);
-        if (!state.soundOn) {
-          weddingVideo.muted = true;
-        }
-      }).catch(function () {
-        state.soundOn = false;
-        setSoundButton();
-        weddingVideo.muted = true;
-        weddingVideo.volume = 0;
-        playMedia(weddingVideo).catch(function () {});
-      });
-
-      if (PREFERS_REDUCED_MOTION) {
-        document.querySelectorAll(".reveal").forEach(function (element) {
-          element.classList.add("visible");
-        });
-      } else {
-        syncMediaToState();
-      }
+      syncVideoPlayback();
     }, revealDelay);
   }
 
@@ -238,16 +141,6 @@
     scrollHint.classList.toggle("is-hidden", window.scrollY > 48);
   }
 
-  function updateHeroViewFromScroll() {
-    var rect = weddingSection.getBoundingClientRect();
-    var inView = rect.top < window.innerHeight * 0.66 && rect.bottom > window.innerHeight * 0.34;
-
-    if (inView !== state.heroInView) {
-      state.heroInView = inView;
-      syncMediaToState();
-    }
-  }
-
   function navigateWithFade(url) {
     if (state.navigatingAway) {
       return;
@@ -255,14 +148,7 @@
 
     state.navigatingAway = true;
     navDim.classList.add("active");
-
-    animateVolume(backgroundMusic, 0, 160, function () {
-      pauseMedia(backgroundMusic);
-    });
-    animateVolume(weddingVideo, 0, 160, function () {
-      weddingVideo.muted = true;
-      pauseMedia(weddingVideo);
-    });
+    pauseMedia(weddingVideo);
 
     setTimeout(function () {
       window.location.href = url;
@@ -373,16 +259,20 @@
 
   function bindHeroObserver() {
     if (!("IntersectionObserver" in window)) {
-      window.addEventListener("scroll", updateHeroViewFromScroll, { passive: true });
+      window.addEventListener("scroll", function () {
+        var rect = weddingSection.getBoundingClientRect();
+        state.heroInView = rect.top < window.innerHeight * 0.7 && rect.bottom > window.innerHeight * 0.3;
+        syncVideoPlayback();
+      }, { passive: true });
       return;
     }
 
     var heroObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        state.heroInView = entry.intersectionRatio >= 0.35;
-        syncMediaToState();
+        state.heroInView = entry.intersectionRatio >= 0.28;
+        syncVideoPlayback();
       });
-    }, { threshold: 0.35 });
+    }, { threshold: [0, 0.28, 0.5] });
 
     heroObserver.observe(weddingSection);
   }
@@ -393,7 +283,7 @@
   soundToggle.addEventListener("click", function () {
     state.soundOn = !state.soundOn;
     setSoundButton();
-    syncMediaToState();
+    syncVideoPlayback();
   });
 
   document.addEventListener("visibilitychange", function () {
@@ -402,11 +292,11 @@
     }
 
     if (document.hidden) {
-      pauseAllMedia();
+      pauseMedia(weddingVideo);
       return;
     }
 
-    syncMediaToState();
+    syncVideoPlayback();
   });
 
   window.addEventListener("pageshow", function (event) {
@@ -416,7 +306,7 @@
 
     state.navigatingAway = false;
     navDim.classList.remove("active");
-    syncMediaToState();
+    syncVideoPlayback();
   });
 
   window.addEventListener("focus", function () {
@@ -424,7 +314,7 @@
       return;
     }
 
-    syncMediaToState();
+    syncVideoPlayback();
   });
 
   window.addEventListener("scroll", hideScrollHint, { passive: true });
