@@ -300,6 +300,7 @@
 
   function openInvitation() {
     var burstDelay = PREFERS_REDUCED_MOTION ? 80 : 180;
+    var letterReleaseDelay = PREFERS_REDUCED_MOTION ? 40 : 260;
     var transitionDelay = PREFERS_REDUCED_MOTION ? 120 : 520;
     var revealDelay = PREFERS_REDUCED_MOTION ? 220 : 820;
     var cleanupDelay = PREFERS_REDUCED_MOTION ? 420 : 1480;
@@ -309,14 +310,24 @@
     }
 
     state.envelopeOpened = true;
+    envelope.classList.remove("letter-raised");
     envelope.classList.add("opening");
     envelopeScreen.classList.add("is-opening");
     document.documentElement.classList.remove("returning-invite");
     clearStoredReturnState();
 
+    if (weddingVideo) {
+      weddingVideo.muted = true;
+      playMedia(weddingVideo).catch(function () {});
+    }
+
     setTimeout(function () {
       goldenBurst.classList.add("active");
     }, burstDelay);
+
+    setTimeout(function () {
+      envelope.classList.add("letter-raised");
+    }, letterReleaseDelay);
 
     setTimeout(function () {
       introTransition.classList.add("active");

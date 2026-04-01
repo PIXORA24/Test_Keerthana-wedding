@@ -759,10 +759,37 @@ button {
 .studio-link {
   display: inline-grid;
   justify-items: center;
-  gap: 8px;
+  gap: 10px;
   text-decoration: none;
-  opacity: 0.66;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 0.9;
+  transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+}
+
+.studio-link__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 73, 82, 0.18);
+  background: rgba(255, 250, 244, 0.78);
+  box-shadow: 0 14px 30px rgba(109, 60, 48, 0.1);
+}
+
+.studio-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(200, 154, 86, 0.18), rgba(148, 73, 82, 0.12));
+  color: var(--rose-deep);
+}
+
+.studio-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
 .studio-name {
@@ -802,7 +829,8 @@ button {
   }
 
   .studio-link:hover {
-    opacity: 0.95;
+    opacity: 1;
+    filter: saturate(1.05);
   }
 }
 

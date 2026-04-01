@@ -74,6 +74,29 @@
 >
 
 <link rel="stylesheet" href="style.css">
+<style>
+  .envelope {
+    isolation: isolate;
+  }
+
+  .envelope.opening .envelope-flap {
+    transform: rotateX(180deg);
+  }
+
+  .envelope.opening .envelope-letter {
+    opacity: 1;
+    transform: translateY(-148%) scale(1.02);
+  }
+
+  .envelope.letter-raised .envelope-flap {
+    z-index: 1;
+  }
+
+  .envelope.letter-raised .envelope-letter {
+    z-index: 6;
+    transform: translateY(-148%) scale(1.02);
+  }
+</style>
 </head>
 
 <body>
@@ -238,9 +261,17 @@
         target="_blank"
         rel="noopener"
         class="studio-link"
+        aria-label="Visit Pixora24 on Instagram"
       >
         <span class="studio-label">Crafted by</span>
-        <span class="studio-name">Pixora24</span>
+        <span class="studio-link__pill">
+          <span class="studio-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M7.25 2h9.5A5.25 5.25 0 0 1 22 7.25v9.5A5.25 5.25 0 0 1 16.75 22h-9.5A5.25 5.25 0 0 1 2 16.75v-9.5A5.25 5.25 0 0 1 7.25 2Zm0 1.75a3.5 3.5 0 0 0-3.5 3.5v9.5a3.5 3.5 0 0 0 3.5 3.5h9.5a3.5 3.5 0 0 0 3.5-3.5v-9.5a3.5 3.5 0 0 0-3.5-3.5h-9.5Zm9.75 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 1.75A3.25 3.25 0 1 0 12 15.25 3.25 3.25 0 0 0 12 8.75Z"/>
+            </svg>
+          </span>
+          <span class="studio-name">Pixora24</span>
+        </span>
       </a>
     </footer>
   </section>
