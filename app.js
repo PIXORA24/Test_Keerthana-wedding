@@ -49,6 +49,8 @@
   var soundToggle = document.getElementById("soundToggle");
   var soundToggleLabel = soundToggle.querySelector(".sound-btn__label");
   var scrollHint = document.getElementById("scrollHint");
+  var RETURN_STATE_KEY = "keerthanaWeddingReturnState";
+  var RETURN_STATE_MAX_AGE = 30 * 60 * 1000;
 
   var state = {
     envelopeOpened: false,
@@ -56,6 +58,107 @@
     heroInView: true,
     navigatingAway: false
   };
+  var pendingMusicUnlock = false;
+
+  function clearStoredReturnState() {
+    try {
+      window.sessionStorage.removeItem(RETURN_STATE_KEY);
+    } catch (error) {}
+  }
+
+  function readStoredReturnState() {
+    try {
+      var rawValue = window.sessionStorage.getItem(RETURN_STATE_KEY);
+      if (!rawValue) {
+        return null;
+      }
+
+      var savedState = JSON.parse(rawValue);
+      if (!savedState || typeof savedState !== "object") {
+        clearStoredReturnState();
+        return null;
+      }
+
+      if (!savedState.pendingReturn || !savedState.envelopeOpened) {
+        clearStoredReturnState();
+        return null;
+      }
+
+      if (typeof savedState.savedAt !== "number" || Date.now() - savedState.savedAt > RETURN_STATE_MAX_AGE) {
+        clearStoredReturnState();
+        return null;
+      }
+
+      return savedState;
+    } catch (error) {
+      clearStoredReturnState();
+      return null;
+    }
+  }
+
+  function getMediaTime(media) {
+    if (!media || typeof media.currentTime !== "number" || !isFinite(media.currentTime) || media.currentTime < 0) {
+      return 0;
+    }
+
+    return media.currentTime;
+  }
+
+  function saveReturnState(pendingReturn) {
+    if (!state.envelopeOpened) {
+      clearStoredReturnState();
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(RETURN_STATE_KEY, JSON.stringify({
+        envelopeOpened: true,
+        musicOn: state.musicOn,
+        pendingReturn: !!pendingReturn,
+        audioTime: getMediaTime(backgroundMusic),
+        videoTime: getMediaTime(weddingVideo),
+        scrollY: window.scrollY || window.pageYOffset || 0,
+        savedAt: Date.now()
+      }));
+    } catch (error) {}
+  }
+
+  function restoreMediaPosition(media, targetTime) {
+    if (!media || typeof targetTime !== "number" || !isFinite(targetTime) || targetTime < 0) {
+      return;
+    }
+
+    function applyTime() {
+      try {
+        var nextTime = Math.max(targetTime, 0);
+
+        if (isFinite(media.duration) && media.duration > 0) {
+          nextTime = Math.min(nextTime, Math.max(media.duration - 0.1, 0));
+        }
+
+        media.currentTime = nextTime;
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    if (media.readyState >= 1 && applyTime()) {
+      return;
+    }
+
+    function handleLoadedMetadata() {
+      media.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      applyTime();
+    }
+
+    media.addEventListener("loadedmetadata", handleLoadedMetadata);
+  }
+
+  function updateHeroInViewState() {
+    var rect = weddingSection.getBoundingClientRect();
+    state.heroInView = rect.top < window.innerHeight * 0.7 && rect.bottom > window.innerHeight * 0.3;
+  }
 
   function formatUtcDate(date) {
     return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -85,6 +188,36 @@
     soundToggle.setAttribute("aria-label", state.musicOn ? "Turn music off" : "Turn music on");
   }
 
+  function removeMusicUnlockRetry() {
+    if (!pendingMusicUnlock) {
+      return;
+    }
+
+    pendingMusicUnlock = false;
+    document.removeEventListener("touchstart", handleMusicUnlockRetry);
+    document.removeEventListener("click", handleMusicUnlockRetry);
+  }
+
+  function queueMusicUnlockRetry() {
+    if (pendingMusicUnlock) {
+      return;
+    }
+
+    pendingMusicUnlock = true;
+    document.addEventListener("touchstart", handleMusicUnlockRetry, { passive: true });
+    document.addEventListener("click", handleMusicUnlockRetry);
+  }
+
+  function handleMusicUnlockRetry() {
+    removeMusicUnlockRetry();
+
+    if (!state.envelopeOpened || state.navigatingAway || document.hidden || !state.musicOn) {
+      return;
+    }
+
+    syncMusicPlayback();
+  }
+
   function syncVideoPlayback() {
     if (!state.envelopeOpened || state.navigatingAway || document.hidden) {
       return;
@@ -105,15 +238,19 @@
     }
 
     if (!state.musicOn) {
+      removeMusicUnlockRetry();
       pauseMedia(backgroundMusic);
       return;
     }
 
     backgroundMusic.volume = 1;
-    playMedia(backgroundMusic).catch(function () {
-      state.musicOn = false;
-      setSoundButton();
-    });
+    playMedia(backgroundMusic)
+      .then(function () {
+        removeMusicUnlockRetry();
+      })
+      .catch(function () {
+        queueMusicUnlockRetry();
+      });
   }
 
   function syncMedia() {
@@ -124,7 +261,41 @@
   function restoreReturnedState() {
     state.navigatingAway = false;
     navDim.classList.remove("active");
+    clearStoredReturnState();
     syncMedia();
+  }
+
+  function restoreInvitationFromState(savedState) {
+    state.envelopeOpened = true;
+    state.musicOn = savedState.musicOn !== false;
+    state.navigatingAway = false;
+
+    envelope.classList.add("opening");
+    envelopeScreen.classList.add("hidden");
+    mainContent.classList.add("visible");
+    soundToggle.classList.add("visible");
+    navDim.classList.remove("active");
+    setSoundButton();
+    document.documentElement.classList.remove("returning-invite");
+
+    if (typeof savedState.scrollY === "number" && isFinite(savedState.scrollY)) {
+      window.scrollTo(0, Math.max(savedState.scrollY, 0));
+    }
+
+    updateHeroInViewState();
+
+    if (backgroundMusic) {
+      backgroundMusic.preload = "auto";
+      restoreMediaPosition(backgroundMusic, savedState.audioTime);
+    }
+
+    if (weddingVideo) {
+      restoreMediaPosition(weddingVideo, savedState.videoTime);
+    }
+
+    syncMedia();
+    hideScrollHint();
+    clearStoredReturnState();
   }
 
   function openInvitation() {
@@ -140,6 +311,8 @@
     state.envelopeOpened = true;
     envelope.classList.add("opening");
     envelopeScreen.classList.add("is-opening");
+    document.documentElement.classList.remove("returning-invite");
+    clearStoredReturnState();
 
     if (backgroundMusic) {
       backgroundMusic.load();
@@ -194,6 +367,21 @@
     navDim.classList.add("active");
     pauseMedia(weddingVideo);
     pauseMedia(backgroundMusic);
+    saveReturnState(true);
+    try {
+      var externalWindow = window.open(url, "_blank");
+
+      if (externalWindow) {
+        externalWindow.opener = null;
+
+        setTimeout(function () {
+          if (!document.hidden && state.navigatingAway) {
+            restoreReturnedState();
+          }
+        }, 700);
+        return;
+      }
+    } catch (error) {}
 
     setTimeout(function () {
       window.location.href = url;
@@ -305,8 +493,7 @@
   function bindHeroObserver() {
     if (!("IntersectionObserver" in window)) {
       window.addEventListener("scroll", function () {
-        var rect = weddingSection.getBoundingClientRect();
-        state.heroInView = rect.top < window.innerHeight * 0.7 && rect.bottom > window.innerHeight * 0.3;
+        updateHeroInViewState();
         syncVideoPlayback();
       }, { passive: true });
       return;
@@ -321,6 +508,8 @@
 
     heroObserver.observe(weddingSection);
   }
+
+  var savedReturnState = readStoredReturnState();
 
   envelope.addEventListener("click", openInvitation);
   envelope.addEventListener("keydown", handleEnvelopeKey);
@@ -337,6 +526,9 @@
     }
 
     if (document.hidden) {
+      if (state.navigatingAway) {
+        saveReturnState(true);
+      }
       pauseMedia(weddingVideo);
       pauseMedia(backgroundMusic);
       return;
@@ -363,11 +555,24 @@
     restoreReturnedState();
   });
 
+  window.addEventListener("pagehide", function () {
+    if (!state.envelopeOpened || !state.navigatingAway) {
+      return;
+    }
+
+    saveReturnState(true);
+  });
+
   window.addEventListener("scroll", hideScrollHint, { passive: true });
+
+  if (savedReturnState) {
+    restoreInvitationFromState(savedReturnState);
+  }
 
   bindActionButtons();
   bindRevealObserver();
   bindHeroObserver();
+  updateHeroInViewState();
   hideScrollHint();
   setSoundButton();
 })();

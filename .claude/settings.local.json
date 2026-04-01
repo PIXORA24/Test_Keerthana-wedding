@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"node_exit:$?\")",
+      "Bash(echo \"py_exit:$?\")",
+      "Bash(echo \"py3_exit:$?\")",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

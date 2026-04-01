@@ -6,23 +6,55 @@
 <meta name="theme-color" content="#8d4f49">
 <title>Keerthana &amp; Shravan Wedding Invitation</title>
 <link rel="canonical" href="https://pixora24.github.io/Test_Keerthana-wedding/">
-<link rel="preload" as="image" href="fallback.png">
+<link rel="preload" as="image" href="assets/images/poster.webp" type="image/webp">
 
 <meta
   name="description"
   content="With joyful hearts, we warmly invite you to celebrate the wedding of Keerthana and Shravan."
 >
+<script>
+  (function () {
+    var returnStateKey = "keerthanaWeddingReturnState";
+    var returnStateMaxAge = 30 * 60 * 1000;
+
+    try {
+      var rawValue = window.sessionStorage.getItem(returnStateKey);
+      if (!rawValue) {
+        return;
+      }
+
+      var savedState = JSON.parse(rawValue);
+      if (!savedState || !savedState.pendingReturn || !savedState.envelopeOpened) {
+        return;
+      }
+
+      if (typeof savedState.savedAt !== "number" || Date.now() - savedState.savedAt > returnStateMaxAge) {
+        return;
+      }
+
+      document.documentElement.classList.add("returning-invite");
+    } catch (error) {}
+  })();
+</script>
+<style>
+  html.returning-invite #envelopeScreen {
+    display: none !important;
+  }
+
+  html.returning-invite #mainContent {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+</style>
 <meta property="og:url" content="https://pixora24.github.io/Test_Keerthana-wedding/">
 <meta property="og:title" content="Keerthana &amp; Shravan Wedding Invitation">
 <meta
   property="og:description"
   content="With joyful hearts, we warmly invite you to celebrate the wedding of Keerthana and Shravan."
 >
-<meta property="og:image" content="https://pixora24.github.io/Test_Keerthana-wedding/preview.png">
-<meta property="og:image:secure_url" content="https://pixora24.github.io/Test_Keerthana-wedding/preview.png">
-<meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="1024">
-<meta property="og:image:height" content="1024">
+<meta property="og:image" content="https://pixora24.github.io/Test_Keerthana-wedding/assets/images/preview.webp">
+<meta property="og:image:secure_url" content="https://pixora24.github.io/Test_Keerthana-wedding/assets/images/preview.webp">
+<meta property="og:image:type" content="image/webp">
 <meta property="og:image:alt" content="Keerthana and Shravan wedding invitation preview">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -31,7 +63,7 @@
   name="twitter:description"
   content="With joyful hearts, we warmly invite you to celebrate the wedding of Keerthana and Shravan."
 >
-<meta name="twitter:image" content="https://pixora24.github.io/Test_Keerthana-wedding/preview.png">
+<meta name="twitter:image" content="https://pixora24.github.io/Test_Keerthana-wedding/assets/images/preview.webp">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -115,11 +147,11 @@
       id="weddingVideo"
       playsinline
       preload="metadata"
-      poster="fallback.png"
+      poster="assets/images/poster.webp"
       loop
       muted
     >
-      <source src="invite video.mp4" type="video/mp4">
+      <source src="assets/media/invite-video.mp4" type="video/mp4">
     </video>
 
     <div class="hero-overlay" aria-hidden="true"></div>
@@ -219,7 +251,7 @@
 </button>
 
 <audio id="bgMusic" preload="none" loop>
-  <source src="music.mp3" type="audio/mpeg">
+  <source src="assets/media/music.mp3" type="audio/mpeg">
 </audio>
 
 <script src="app.js"></script>
