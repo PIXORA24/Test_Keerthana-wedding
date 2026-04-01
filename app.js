@@ -14,7 +14,7 @@
     },
     mehendi: {
       title: "Mehendi Ceremony",
-      calendarTitle: "Keerthana and Shravan Mehendi",
+      calendarTitle: "Keerthana's Mehendi",
       date: "2026-04-08T19:30:00+05:30",
       duration: 5,
       venue: "Kalpavraksha House",
@@ -119,6 +119,12 @@
   function syncMedia() {
     syncVideoPlayback();
     syncMusicPlayback();
+  }
+
+  function restoreReturnedState() {
+    state.navigatingAway = false;
+    navDim.classList.remove("active");
+    syncMedia();
   }
 
   function openInvitation() {
@@ -336,25 +342,25 @@
       return;
     }
 
-    syncMedia();
+    restoreReturnedState();
   });
 
   window.addEventListener("pageshow", function (event) {
-    if (!event.persisted || !state.envelopeOpened) {
+    if (!state.envelopeOpened) {
       return;
     }
 
-    state.navigatingAway = false;
-    navDim.classList.remove("active");
-    syncMedia();
+    if (event.persisted || state.navigatingAway) {
+      restoreReturnedState();
+    }
   });
 
   window.addEventListener("focus", function () {
-    if (!state.envelopeOpened || state.navigatingAway || document.hidden) {
+    if (!state.envelopeOpened || document.hidden) {
       return;
     }
 
-    syncMedia();
+    restoreReturnedState();
   });
 
   window.addEventListener("scroll", hideScrollHint, { passive: true });

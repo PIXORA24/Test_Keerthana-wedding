@@ -610,6 +610,7 @@ button {
   line-height: 1.12;
   max-width: 12ch;
   margin-inline: auto;
+  text-wrap: balance;
 }
 
 .details-copy,
@@ -624,6 +625,7 @@ button {
   max-width: 30ch;
   margin: 18px auto 0;
   color: var(--ink-soft);
+  text-wrap: balance;
 }
 
 .event-grid {
@@ -837,6 +839,23 @@ button {
     top: 12px;
     right: 12px;
     padding: 10px 14px;
+  }
+
+  .section-intro {
+    width: min(100%, 420px);
+  }
+
+  .details-title {
+    max-width: 15ch;
+    font-size: 1.76rem;
+    line-height: 1.16;
+    letter-spacing: 0.01em;
+  }
+
+  .details-copy {
+    max-width: 24ch;
+    font-size: 1.02rem;
+    line-height: 1.6;
   }
 
   .event-card {
