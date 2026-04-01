@@ -40,6 +40,7 @@
   var envelopeScreen = document.getElementById("envelopeScreen");
   var envelope = document.getElementById("envelope");
   var goldenBurst = document.getElementById("goldenBurst");
+  var introTransition = document.getElementById("introTransition");
   var navDim = document.getElementById("navDim");
   var mainContent = document.getElementById("mainContent");
   var weddingSection = document.getElementById("weddingSection");
@@ -121,8 +122,10 @@
   }
 
   function openInvitation() {
-    var burstDelay = PREFERS_REDUCED_MOTION ? 120 : 520;
-    var revealDelay = PREFERS_REDUCED_MOTION ? 240 : 1280;
+    var burstDelay = PREFERS_REDUCED_MOTION ? 80 : 180;
+    var transitionDelay = PREFERS_REDUCED_MOTION ? 120 : 520;
+    var revealDelay = PREFERS_REDUCED_MOTION ? 220 : 820;
+    var cleanupDelay = PREFERS_REDUCED_MOTION ? 420 : 1480;
 
     if (state.envelopeOpened) {
       return;
@@ -130,6 +133,7 @@
 
     state.envelopeOpened = true;
     envelope.classList.add("opening");
+    envelopeScreen.classList.add("is-opening");
 
     if (backgroundMusic) {
       backgroundMusic.load();
@@ -142,13 +146,24 @@
     }, burstDelay);
 
     setTimeout(function () {
-      goldenBurst.classList.remove("active");
+      introTransition.classList.add("active");
+    }, transitionDelay);
+
+    setTimeout(function () {
       envelopeScreen.classList.add("hidden");
       mainContent.classList.add("visible");
       soundToggle.classList.add("visible");
       setSoundButton();
       syncMedia();
     }, revealDelay);
+
+    setTimeout(function () {
+      goldenBurst.classList.remove("active");
+    }, revealDelay + 80);
+
+    setTimeout(function () {
+      introTransition.classList.remove("active");
+    }, cleanupDelay);
   }
 
   function handleEnvelopeKey(event) {
