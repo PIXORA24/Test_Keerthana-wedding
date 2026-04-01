@@ -44,13 +44,14 @@
   var mainContent = document.getElementById("mainContent");
   var weddingSection = document.getElementById("weddingSection");
   var weddingVideo = document.getElementById("weddingVideo");
+  var backgroundMusic = document.getElementById("bgMusic");
   var soundToggle = document.getElementById("soundToggle");
   var soundToggleLabel = soundToggle.querySelector(".sound-btn__label");
   var scrollHint = document.getElementById("scrollHint");
 
   var state = {
     envelopeOpened: false,
-    soundOn: true,
+    musicOn: true,
     heroInView: true,
     navigatingAway: false
   };
@@ -78,9 +79,9 @@
   }
 
   function setSoundButton() {
-    soundToggle.classList.toggle("is-muted", !state.soundOn);
-    soundToggleLabel.textContent = state.soundOn ? "Sound on" : "Sound off";
-    soundToggle.setAttribute("aria-label", state.soundOn ? "Turn sound off" : "Turn sound on");
+    soundToggle.classList.toggle("is-muted", !state.musicOn);
+    soundToggleLabel.textContent = state.musicOn ? "Music on" : "Music off";
+    soundToggle.setAttribute("aria-label", state.musicOn ? "Turn music off" : "Turn music on");
   }
 
   function syncVideoPlayback() {
@@ -93,19 +94,35 @@
       return;
     }
 
-    weddingVideo.muted = !state.soundOn;
+    weddingVideo.muted = true;
+    playMedia(weddingVideo).catch(function () {});
+  }
 
-    playMedia(weddingVideo).catch(function () {
-      state.soundOn = false;
+  function syncMusicPlayback() {
+    if (!state.envelopeOpened || state.navigatingAway || document.hidden) {
+      return;
+    }
+
+    if (!state.musicOn) {
+      pauseMedia(backgroundMusic);
+      return;
+    }
+
+    backgroundMusic.volume = 1;
+    playMedia(backgroundMusic).catch(function () {
+      state.musicOn = false;
       setSoundButton();
-      weddingVideo.muted = true;
-      playMedia(weddingVideo).catch(function () {});
     });
   }
 
+  function syncMedia() {
+    syncVideoPlayback();
+    syncMusicPlayback();
+  }
+
   function openInvitation() {
-    var burstDelay = PREFERS_REDUCED_MOTION ? 120 : 600;
-    var revealDelay = PREFERS_REDUCED_MOTION ? 240 : 1380;
+    var burstDelay = PREFERS_REDUCED_MOTION ? 120 : 520;
+    var revealDelay = PREFERS_REDUCED_MOTION ? 240 : 1280;
 
     if (state.envelopeOpened) {
       return;
@@ -113,6 +130,12 @@
 
     state.envelopeOpened = true;
     envelope.classList.add("opening");
+
+    if (backgroundMusic) {
+      backgroundMusic.load();
+    }
+
+    weddingVideo.load();
 
     setTimeout(function () {
       goldenBurst.classList.add("active");
@@ -124,7 +147,7 @@
       mainContent.classList.add("visible");
       soundToggle.classList.add("visible");
       setSoundButton();
-      syncVideoPlayback();
+      syncMedia();
     }, revealDelay);
   }
 
@@ -149,6 +172,7 @@
     state.navigatingAway = true;
     navDim.classList.add("active");
     pauseMedia(weddingVideo);
+    pauseMedia(backgroundMusic);
 
     setTimeout(function () {
       window.location.href = url;
@@ -281,9 +305,9 @@
   envelope.addEventListener("keydown", handleEnvelopeKey);
 
   soundToggle.addEventListener("click", function () {
-    state.soundOn = !state.soundOn;
+    state.musicOn = !state.musicOn;
     setSoundButton();
-    syncVideoPlayback();
+    syncMusicPlayback();
   });
 
   document.addEventListener("visibilitychange", function () {
@@ -293,10 +317,11 @@
 
     if (document.hidden) {
       pauseMedia(weddingVideo);
+      pauseMedia(backgroundMusic);
       return;
     }
 
-    syncVideoPlayback();
+    syncMedia();
   });
 
   window.addEventListener("pageshow", function (event) {
@@ -306,7 +331,7 @@
 
     state.navigatingAway = false;
     navDim.classList.remove("active");
-    syncVideoPlayback();
+    syncMedia();
   });
 
   window.addEventListener("focus", function () {
@@ -314,7 +339,7 @@
       return;
     }
 
-    syncVideoPlayback();
+    syncMedia();
   });
 
   window.addEventListener("scroll", hideScrollHint, { passive: true });
