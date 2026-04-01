@@ -59,6 +59,14 @@
   };
   var pendingMusicUnlock = false;
 
+  function trackEvent(name, params) {
+    if (typeof window.gtag !== "function") {
+      return;
+    }
+
+    window.gtag("event", name, params || {});
+  }
+
   function clearStoredReturnState() {
     try {
       window.sessionStorage.removeItem(RETURN_STATE_KEY);
@@ -314,6 +322,9 @@
     envelopeScreen.classList.add("is-opening");
     document.documentElement.classList.remove("returning-invite");
     clearStoredReturnState();
+    trackEvent("invitation_open", {
+      source: "envelope"
+    });
 
     if (weddingVideo) {
       weddingVideo.muted = true;
@@ -423,6 +434,9 @@
 
       button.addEventListener("click", function (event) {
         event.preventDefault();
+        trackEvent("directions_click", {
+          invite_event: button.dataset.event
+        });
         navigateWithFade(url);
       });
     });
@@ -436,6 +450,9 @@
 
       button.addEventListener("click", function (event) {
         event.preventDefault();
+        trackEvent("calendar_click", {
+          invite_event: button.dataset.event
+        });
         navigateWithFade(buildCalendarUrl(eventData));
       });
     });
@@ -492,7 +509,18 @@
   soundToggle.addEventListener("click", function () {
     state.musicOn = !state.musicOn;
     setSoundButton();
+    trackEvent("music_toggle", {
+      state: state.musicOn ? "on" : "off"
+    });
     syncMusicPlayback();
+  });
+
+  document.querySelectorAll(".studio-link").forEach(function (link) {
+    link.addEventListener("click", function () {
+      trackEvent("instagram_click", {
+        destination: "pixora24"
+      });
+    });
   });
 
   document.addEventListener("visibilitychange", function () {
