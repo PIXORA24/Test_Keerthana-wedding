@@ -314,12 +314,6 @@
     document.documentElement.classList.remove("returning-invite");
     clearStoredReturnState();
 
-    if (backgroundMusic) {
-      backgroundMusic.load();
-    }
-
-    weddingVideo.load();
-
     setTimeout(function () {
       goldenBurst.classList.add("active");
     }, burstDelay);
@@ -564,6 +558,11 @@
   });
 
   window.addEventListener("scroll", hideScrollHint, { passive: true });
+
+  if (weddingVideo) {
+    weddingVideo.preload = "auto";
+    weddingVideo.load();
+  }
 
   if (savedReturnState) {
     restoreInvitationFromState(savedReturnState);
