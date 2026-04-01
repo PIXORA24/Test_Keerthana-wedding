@@ -34,7 +34,6 @@
     }
   };
 
-  var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   var PREFERS_REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var envelopeScreen = document.getElementById("envelopeScreen");
@@ -396,10 +395,6 @@
   function buildDirectionsUrl(eventData) {
     var destination = eventData.lat + "," + eventData.lng;
 
-    if (IS_IOS) {
-      return "maps://maps.apple.com/?daddr=" + destination;
-    }
-
     return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(destination);
   }
 
@@ -407,31 +402,6 @@
     var start = new Date(eventData.date);
     var end = new Date(start.getTime() + eventData.duration * 3600000);
     var location = eventData.venue + ", " + eventData.address;
-
-    if (IS_IOS) {
-      var ics = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//Wedding Invite//EN",
-        "BEGIN:VEVENT",
-        "DTSTART:" + formatUtcDate(start),
-        "DTEND:" + formatUtcDate(end),
-        "SUMMARY:" + eventData.calendarTitle,
-        "LOCATION:" + location,
-        "DESCRIPTION:" + eventData.title + " - " + eventData.venue,
-        "END:VEVENT",
-        "END:VCALENDAR"
-      ].join("\r\n");
-
-      var blob = new Blob([ics], { type: "text/calendar" });
-      var blobUrl = URL.createObjectURL(blob);
-
-      setTimeout(function () {
-        URL.revokeObjectURL(blobUrl);
-      }, 60000);
-
-      return blobUrl;
-    }
 
     return "https://calendar.google.com/calendar/render?action=TEMPLATE"
       + "&text=" + encodeURIComponent(eventData.calendarTitle)
